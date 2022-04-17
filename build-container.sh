@@ -19,8 +19,8 @@
 set -e # Any command which returns non-zero exit code will cause this shell script to exit immediately
 set -x # Activate debugging to show execution details: all commands will be printed before execution
 
-containerName=${1:-projector-idea-c}
-downloadUrl=${2:-https://download.jetbrains.com/idea/ideaIC-2019.3.5.tar.gz}
+containerName=${1:-gcr.io/cloud-workstations-external/android-studio:latest}
+downloadUrl=${2:-https://redirector.gvt1.com/edgedl/android/studio/ide-zips/2021.1.1.20/android-studio-2021.1.1.20-linux.tar.gz}
 
 # build container:
 DOCKER_BUILDKIT=1 docker build --progress=plain -t "$containerName" --build-arg buildGradle=true --build-arg "downloadUrl=$downloadUrl" -f Dockerfile ..

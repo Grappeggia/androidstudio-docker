@@ -24,8 +24,8 @@ cd ../projector-server
 ./gradlew :projector-server:distZip
 cd -
 
-containerName=${1:-projector-idea-c}
-downloadUrl=${2:-https://download.jetbrains.com/idea/ideaIC-2019.3.5.tar.gz}
+containerName=${1:-gcr.io/cloud-workstations-external/android-studio:latest}
+downloadUrl=${2:-https://redirector.gvt1.com/edgedl/android/studio/ide-zips/2021.1.1.20/android-studio-2021.1.1.20-linux.tar.gz}
 
 # build container:
 DOCKER_BUILDKIT=1 docker build --progress=plain -t "$containerName" --build-arg buildGradle=false --build-arg "downloadUrl=$downloadUrl" -f Dockerfile ..

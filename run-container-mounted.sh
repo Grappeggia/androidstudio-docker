@@ -19,6 +19,6 @@
 set -e # Any command which returns non-zero exit code will cause this shell script to exit immediately
 set -x # Activate debugging to show execution details: all commands will be printed before execution
 
-containerName=${1:-projector-idea-c}
+containerName=${1:-gcr.io/cloud-workstations-external/android-studio:latest}
 
 docker run --rm -p 8887:8887 -v ~/projector-docker:/home/projector-user -it "$containerName"
