@@ -25,6 +25,7 @@ ARG downloadUrl
 RUN wget -q $downloadUrl -O - | tar -xz
 RUN find . -maxdepth 1 -type d -name * -execdir mv {} /ide \;
 
+
 FROM amazoncorretto:11 as projectorGradleBuilder
 
 ENV PROJECTOR_DIR /projector
@@ -59,6 +60,8 @@ RUN mv projector-server $PROJECTOR_DIR/ide/projector-server
 RUN mv $PROJECTOR_DIR/ide-projector-launcher.sh $PROJECTOR_DIR/ide/bin
 RUN chmod 644 $PROJECTOR_DIR/ide/projector-server/lib/*
 
+
+
 FROM debian:10
 
 RUN true \
@@ -74,6 +77,9 @@ RUN true \
     && apt-get install git bash-completion sudo -y \
 # packages for IDEA (to disable warnings):
     && apt-get install procps -y \
+# packaged for Android Studio:
+    && apt-get install libc6-dev-i386 lib32z1 openjdk-11-jdk -y \ 
+
 # clean apt to reduce image size:
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt
@@ -115,8 +121,53 @@ RUN true \
     && chown -R $PROJECTOR_USER_NAME.$PROJECTOR_USER_NAME $PROJECTOR_DIR/ide/bin \
     && chown $PROJECTOR_USER_NAME.$PROJECTOR_USER_NAME run.sh
 
+# Install Android SDK manager
+WORKDIR /home/$PROJECTOR_USER_NAME
+RUN apt-get update
+RUN apt-get install unzip zip wget snap -y
+
+
+# Install Android SDK
+RUN wget https://dl.google.com/android/android-sdk_r22.0.5-linux.tgz
+RUN tar -xvf android-sdk_r22.0.5-linux.tgz
+RUN rm android-sdk_r22.0.5-linux.tgz
+
+# Any command which returns non-zero exit code will cause this shell script to exit immediately:
+RUN true \ 
+# Install SDK Manager
+    && wget https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip \
+    && unzip commandlinetools-linux-8092744_latest.zip \ 
+    && rm commandlinetools-linux-8092744_latest.zip \
+    && mkdir android-sdk-linux/cmdline-tools \
+    && mkdir android-sdk-linux/cmdline-tools/latest \
+    && mv cmdline-tools/* android-sdk-linux/cmdline-tools/latest/
+
+# Set-up ANDROID_SDK_ROOT and PATH to point to Android tools
+ENV PATH $PATH:/home/$PROJECTOR_USER_NAME/android-sdk-linux/bin:/home/$PROJECTOR_USER_NAME/android-sdk-linux/cmdline-tools/latest/bin
+ENV ANDROID_SDK_ROOT /home/$PROJECTOR_USER_NAME/android-sdk-linux
+
+# Update SDK to latest version
+RUN sdkmanager --update
+RUN echo "y" | sdkmanager "platforms;android-25" "build-tools;25.0.2" "extras;google;m2repository" "extras;android;m2repository"
+RUN echo "y" | sdkmanager "platform-tools"
+RUN echo "y" | sdkmanager "build-tools;32.0.0"
+RUN echo "y" | sdkmanager "build-tools;32.1.0-rc1"
+RUN echo "y" | sdkmanager "extras;google;google_play_services"
+RUN sdkmanager "platforms;android-32" "emulator" 
+RUN yes | sdkmanager --licenses
+#RUN sdkmanager "cmake;android-25"
+
+# Update Kotlin
+RUN curl -s https://get.sdkman.io | bash
+
+RUN chown -R $PROJECTOR_USER_NAME.$PROJECTOR_USER_NAME /home/$PROJECTOR_USER_NAME
+
+WORKDIR $PROJECTOR_DIR/projector-server
+
 USER $PROJECTOR_USER_NAME
 ENV HOME /home/$PROJECTOR_USER_NAME
+
+
 
 EXPOSE 8887
 
